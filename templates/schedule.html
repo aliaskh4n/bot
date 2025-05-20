@@ -1,0 +1,195 @@
+<!-- templates/schedule.html -->
+{% extends 'base.html' %}
+
+{% block title %}Мой график уборки{% endblock %}
+
+{% block content %}
+<div class="schedule-container">
+    <div class="filters">
+        <div class="date-filter">
+            <button id="prev-week" class="btn btn-small">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <span id="date-range">Текущая неделя</span>
+            <button id="next-week" class="btn btn-small">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div id="schedule-list" class="schedule-list">
+        <div class="loader"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Настройка состояния фильтров по умолчанию
+    let currentWeekOffset = 0;
+    
+    // Функция загрузки графика
+    function loadSchedule() {
+        const scheduleList = document.getElementById('schedule-list');
+        scheduleList.innerHTML = '<div class="loader"></div>';
+        
+        const telegramId = tg.initDataUnsafe?.user?.id;
+        if (!telegramId) {
+            scheduleList.innerHTML = '<p class="error">Не удалось получить данные пользователя Telegram</p>';
+            return;
+        }
+        
+        // Получение данных пользователя
+        axios.get(`/api/user/${telegramId}`)
+            .then(response => {
+                const user = response.data;
+                document.getElementById('username').textContent = user.username;
+                
+                // Расчет дат для текущей недели с учетом смещения
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                
+                // Обновление отображения диапазона дат
+                const startFormatted = startOfWeek.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+                const endFormatted = endOfWeek.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+                document.getElementById('date-range').textContent = `${startFormatted} - ${endFormatted}`;
+                
+                // Получение графика пользователя
+                return axios.get(`/api/schedule/user/${user.id}`);
+            })
+            .then(response => {
+                const allSchedules = response.data;
+                const scheduleList = document.getElementById('schedule-list');
+                
+                // Фильтрация задач для текущей недели
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+                startOfWeek.setHours(0, 0, 0, 0);
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setHours(23, 59, 59, 999);
+                
+                const weekSchedules = allSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.date);
+                    return scheduleDate >= startOfWeek && scheduleDate <= endOfWeek;
+                });
+                
+                if (weekSchedules.length > 0) {
+                    // Сортировка по дате
+                    weekSchedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    // Группировка по дням недели
+                    const dayGroups = {};
+                    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+                    
+                    weekSchedules.forEach(schedule => {
+                        const scheduleDate = new Date(schedule.date);
+                        const dayName = days[scheduleDate.getDay()];
+                        const dayFormatted = scheduleDate.toLocaleDateString('ru-RU', { 
+                            day: 'numeric', 
+                            month: 'long'
+                        });
+                        
+                        const dayKey = `${dayName}, ${dayFormatted}`;
+                        
+                        if (!dayGroups[dayKey]) {
+                            dayGroups[dayKey] = [];
+                        }
+                        
+                        dayGroups[dayKey].push(schedule);
+                    });
+                    
+                    // Формирование HTML для каждого дня
+                    let html = '';
+                    for (const dayKey in dayGroups) {
+                        html += `<div class="day-group">
+                            <h3 class="day-header">${dayKey}</h3>
+                            <div class="day-tasks">`;
+                        
+                        dayGroups[dayKey].forEach(schedule => {
+                            html += `
+                                <div class="task-card ${schedule.completed ? 'completed' : ''}">
+                                    <h4>${schedule.task}</h4>
+                                    <p><i class="fas fa-map-marker-alt"></i> ${schedule.location}</p>
+                                    <div class="task-status ${schedule.completed ? 'completed' : 'pending'}">
+                                        ${schedule.completed ? 'Выполнено' : 'Ожидает выполнения'}
+                                    </div>
+                                    <button class="toggle-status-btn" data-id="${schedule.id}" data-completed="${schedule.completed}">
+                                        ${schedule.completed ? '<i class="fas fa-times"></i> Отменить' : '<i class="fas fa-check"></i> Отметить выполненным'}
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div></div>`;
+                    }
+                    
+                    scheduleList.innerHTML = html;
+                    
+                    // Добавление обработчиков для кнопок изменения статуса
+                    document.querySelectorAll('.toggle-status-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const completed = this.dataset.completed !== 'true';
+                            
+                            axios.put('/api/admin/schedule', {
+                                id: id,
+                                completed: completed
+                            })
+                            .then(response => {
+                                if (response.data.success) {
+                                    tg.showPopup({
+                                        title: 'Успех',
+                                        message: `Задача ${completed ? 'отмечена как выполненная' : 'помечена как невыполненная'}!`,
+                                        buttons: [{type: 'ok'}]
+                                    }, function() {
+                                        loadSchedule();
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                tg.showPopup({
+                                    title: 'Ошибка',
+                                    message: 'Не удалось обновить статус задачи',
+                                    buttons: [{type: 'ok'}]
+                                });
+                            });
+                        });
+                    });
+                } else {
+                    scheduleList.innerHTML = '<p class="no-tasks">Нет задач на этой неделе</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка получения данных:', error);
+                document.getElementById('schedule-list').innerHTML = 
+                    '<p class="error">Произошла ошибка при загрузке данных</p>';
+            });
+    }
+    
+    // Инициализация загрузки графика
+    loadSchedule();
+    
+    // Обработчики для кнопок навигации по неделям
+    document.getElementById('prev-week').addEventListener('click', function() {
+        currentWeekOffset--;
+        loadSchedule();
+    });
+    
+    document.getElementById('next-week').addEventListener('click', function() {
+        currentWeekOffset++;
+        loadSchedule();
+    });
+});
+</script>
+{% endblock %}

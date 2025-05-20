@@ -1,0 +1,128 @@
+<!-- templates/index.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="home-container">
+    <div class="greeting">
+        <h2>Здравствуйте, <span id="user-greeting"></span>!</h2>
+    </div>
+    
+    <div class="next-cleaning">
+        <h3>Ваша ближайшая уборка:</h3>
+        <div id="next-task">
+            <div class="loader"></div>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <button id="view-schedule" class="btn btn-primary">
+            <i class="fas fa-calendar"></i> Посмотреть полный график
+        </button>
+        <button id="mark-completed" class="btn btn-success">
+            <i class="fas fa-check"></i> Отметить выполненным
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Получение данных текущего пользователя
+    const telegramId = tg.initDataUnsafe?.user?.id;
+    if (telegramId) {
+        axios.get(`/api/user/${telegramId}`)
+            .then(response => {
+                const user = response.data;
+                document.getElementById('username').textContent = user.username;
+                document.getElementById('user-greeting').textContent = user.username;
+                
+                // Получение графика пользователя
+                return axios.get(`/api/schedule/user/${user.id}`);
+            })
+            .then(response => {
+                const schedules = response.data;
+                const nextTaskContainer = document.getElementById('next-task');
+                
+                if (schedules.length > 0) {
+                    // Сортируем по дате и берем ближайшую задачу
+                    schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const nextTask = schedules[0];
+                    
+                    // Форматируем дату в удобный вид
+                    const taskDate = new Date(nextTask.date);
+                    const formattedDate = taskDate.toLocaleDateString('ru-RU', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    
+                    nextTaskContainer.innerHTML = `
+                        <div class="task-card">
+                            <h4>${nextTask.task}</h4>
+                            <p><i class="fas fa-map-marker-alt"></i> ${nextTask.location}</p>
+                            <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
+                            <div class="task-status ${nextTask.completed ? 'completed' : 'pending'}">
+                                ${nextTask.completed ? 'Выполнено' : 'Ожидает выполнения'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Настраиваем кнопку отметки выполнения
+                    const markCompletedBtn = document.getElementById('mark-completed');
+                    if (nextTask.completed) {
+                        markCompletedBtn.disabled = true;
+                        markCompletedBtn.classList.add('disabled');
+                        markCompletedBtn.innerHTML = '<i class="fas fa-check"></i> Уже выполнено';
+                    } else {
+                        markCompletedBtn.addEventListener('click', function() {
+                            axios.put('/api/admin/schedule', {
+                                id: nextTask.id,
+                                completed: true
+                            })
+                            .then(response => {
+                                if (response.data.success) {
+                                    tg.showPopup({
+                                        title: 'Успех',
+                                        message: 'Задача помечена как выполненная!',
+                                        buttons: [{type: 'ok'}]
+                                    }, function() {
+                                        location.reload();
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                tg.showPopup({
+                                    title: 'Ошибка',
+                                    message: 'Не удалось обновить статус задачи',
+                                    buttons: [{type: 'ok'}]
+                                });
+                            });
+                        });
+                    }
+                } else {
+                    nextTaskContainer.innerHTML = '<p class="no-tasks">У вас нет запланированных задач</p>';
+                    document.getElementById('mark-completed').style.display = 'none';
+                }
+                
+                // Настраиваем кнопку просмотра полного графика
+                document.getElementById('view-schedule').addEventListener('click', function() {
+                    window.location.href = '/schedule';
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка получения данных:', error);
+                document.getElementById('next-task').innerHTML = 
+                    '<p class="error">Произошла ошибка при загрузке данных</p>';
+            });
+    } else {
+        document.getElementById('next-task').innerHTML = 
+            '<p class="error">Не удалось получить данные пользователя Telegram</p>';
+    }
+});
+</script>
+{% endblock %}

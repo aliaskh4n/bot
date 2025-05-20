@@ -1,0 +1,1163 @@
+<!-- templates/admin.html -->
+{% extends 'base.html' %}
+
+{% block title %}Администрирование{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="tabs">
+        <button id="tab-users" class="tab-btn active">Пользователи</button>
+        <button id="tab-tasks" class="tab-btn">Задачи</button>
+        <button id="tab-schedule" class="tab-btn">График</button>
+    </div>
+    
+    <div class="tab-content">
+        <!-- Вкладка пользователей -->
+        <div id="users-content" class="tab-pane active">
+            <div class="admin-header">
+                <h2>Управление пользователями</h2>
+                <button id="add-user-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Добавить пользователя
+                </button>
+            </div>
+            
+            <div class="users-list">
+                <div class="loader"></div>
+            </div>
+            
+            <div id="add-user-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h3>Добавить пользователя</h3>
+                    <form id="add-user-form">
+                        <div class="form-group">
+                            <label for="user-name">Имя пользователя:</label>
+                            <input type="text" id="user-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="telegram-id">Telegram ID:</label>
+                            <input type="text" id="telegram-id" required>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="is-admin">
+                            <label for="is-admin">Администратор</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка задач -->
+        <div id="tasks-content" class="tab-pane">
+            <div class="admin-header">
+                <h2>Управление задачами</h2>
+                <button id="add-task-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Добавить задачу
+                </button>
+            </div>
+            
+            <div class="tasks-list">
+                <div class="loader"></div>
+            </div>
+            
+            <div id="add-task-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h3>Добавить задачу</h3>
+                    <form id="add-task-form">
+                        <input type="hidden" id="task-id">
+                        <div class="form-group">
+                            <label for="task-title">Название:</label>
+                            <input type="text" id="task-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-location">Место:</label>
+                            <input type="text" id="task-location" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-description">Описание:</label>
+                            <textarea id="task-description" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка графика -->
+        <div id="schedule-content" class="tab-pane">
+            <div class="admin-header">
+                <h2>Управление графиком</h2>
+                <button id="add-schedule-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Добавить запись в график
+                </button>
+            </div>
+            
+            <div class="schedule-filter">
+                <div class="filter-group">
+                    <label for="schedule-user-filter">Пользователь:</label>
+                    <select id="schedule-user-filter">
+                        <option value="">Все пользователи</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="schedule-task-filter">Задача:</label>
+                    <select id="schedule-task-filter">
+                        <option value="">Все задачи</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="schedule-month-filter">Месяц:</label>
+                    <select id="schedule-month-filter">
+                        <option value="">Текущий месяц</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="schedule-admin-list">
+                <div class="loader"></div>
+            </div>
+            
+            <div id="add-schedule-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h3>Добавить запись в график</h3>
+                    <form id="add-schedule-form">
+                        <input type="hidden" id="schedule-id">
+                        <div class="form-group">
+                            <label for="schedule-user">Пользователь:</label>
+                            <select id="schedule-user" required>
+                                <option value="">Выберите пользователя</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule-task">Задача:</label>
+                            <select id="schedule-task" required>
+                                <option value="">Выберите задачу</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule-date">Дата:</label>
+                            <input type="date" id="schedule-date" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Функции переключения вкладок
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Удаляем класс active у всех кнопок и вкладок
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+            
+            // Добавляем класс active для текущей кнопки
+            this.classList.add('active');
+            
+            // Определяем, какую вкладку нужно активировать
+            const targetTab = this.id.replace('tab-', '');
+            document.getElementById(`${targetTab}-content`).classList.add('active');
+            
+            // Загружаем данные для активной вкладки
+            loadTabData(targetTab);
+        });
+    });
+    
+    // Функция загрузки данных для вкладки
+    function loadTabData(tabName) {
+        switch (tabName) {
+            case 'users':
+                loadUsers();
+                break;
+            case 'tasks':
+                loadTasks();
+                break;
+            case 'schedule':
+                loadSchedule();
+                break;
+        }
+    }
+    
+    // Функция загрузки пользователей
+    function loadUsers() {
+        const usersList = document.querySelector('.users-list');
+        usersList.innerHTML = '<div class="loader"></div>';
+        
+        axios.get('/api/admin/users')
+            .then(response => {
+                const users = response.data;
+                
+                if (users.length > 0) {
+                    let html = '<div class="admin-table">';
+                    html += `<div class="table-header">
+                        <div class="table-cell">ID</div>
+                        <div class="table-cell">Имя</div>
+                        <div class="table-cell">Telegram ID</div>
+                        <div class="table-cell">Администратор</div>
+                        <div class="table-cell">Действия</div>
+                    </div>`;
+                    
+                    users.forEach(user => {
+                        html += `<div class="table-row">
+                            <div class="table-cell">${user.id}</div>
+                            <div class="table-cell">${user.username}</div>
+                            <div class="table-cell">${user.telegram_id}</div>
+                            <div class="table-cell">${user.is_admin ? 'Да' : 'Нет'}</div>
+                            <div class="table-cell">
+                                <button class="btn btn-small btn-edit edit-user-btn" data-id="${user.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-small btn-delete delete-user-btn" data-id="${user.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    html += '</div>';
+                    usersList.innerHTML = html;
+                    
+                    // Добавляем обработчики для кнопок редактирования и удаления
+                    document.querySelectorAll('.edit-user-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const userId = this.dataset.id;
+                            editUser(userId);
+                        });
+                    });
+                    
+                    document.querySelectorAll('.delete-user-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const userId = this.dataset.id;
+                            deleteUser(userId);
+                        });
+                    });
+                } else {
+                    usersList.innerHTML = '<p class="no-data">Нет доступных пользователей</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки пользователей:', error);
+                usersList.innerHTML = '<p class="error">Ошибка загрузки пользователей</p>';
+            });
+    }
+    
+    // Функция загрузки задач
+    function loadTasks() {
+        const tasksList = document.querySelector('.tasks-list');
+        tasksList.innerHTML = '<div class="loader"></div>';
+        
+        axios.get('/api/admin/tasks')
+            .then(response => {
+                const tasks = response.data;
+                
+                if (tasks.length > 0) {
+                    let html = '<div class="admin-table">';
+                    html += `<div class="table-header">
+                        <div class="table-cell">ID</div>
+                        <div class="table-cell">Название</div>
+                        <div class="table-cell">Место</div>
+                        <div class="table-cell">Описание</div>
+                        <div class="table-cell">Действия</div>
+                    </div>`;
+                    
+                    tasks.forEach(task => {
+                        html += `<div class="table-row">
+                            <div class="table-cell">${task.id}</div>
+                            <div class="table-cell">${task.title}</div>
+                            <div class="table-cell">${task.location}</div>
+                            <div class="table-cell">${task.description || '—'}</div>
+                            <div class="table-cell">
+                                <button class="btn btn-small btn-edit edit-task-btn" data-id="${task.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-small btn-delete delete-task-btn" data-id="${task.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    html += '</div>';
+                    tasksList.innerHTML = html;
+                    
+                    // Добавляем обработчики для кнопок редактирования и удаления
+                    document.querySelectorAll('.edit-task-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const taskId = this.dataset.id;
+                            editTask(taskId);
+                        });
+                    });
+                    
+                    document.querySelectorAll('.delete-task-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const taskId = this.dataset.id;
+                            deleteTask(taskId);
+                        });
+                    });
+                } else {
+                    tasksList.innerHTML = '<p class="no-data">Нет доступных задач</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки задач:', error);
+                tasksList.innerHTML = '<p class="error">Ошибка загрузки задач</p>';
+            });
+    }
+    
+    // Функция загрузки графика
+    function loadSchedule() {
+        const scheduleList = document.querySelector('.schedule-admin-list');
+        scheduleList.innerHTML = '<div class="loader"></div>';
+        
+        // Загружаем пользователей для фильтра
+        axios.get('/api/admin/users')
+            .then(response => {
+                const users = response.data;
+                const userFilter = document.getElementById('schedule-user-filter');
+                const scheduleUserSelect = document.getElementById('schedule-user');
+                
+                // Очищаем текущие опции
+                while (userFilter.options.length > 1) {
+                    userFilter.remove(1);
+                }
+                
+                while (scheduleUserSelect.options.length > 1) {
+                    scheduleUserSelect.remove(1);
+                }
+                
+                // Добавляем пользователей
+                users.forEach(user => {
+                    const filterOption = document.createElement('option');
+                    filterOption.value = user.id;
+                    filterOption.textContent = user.username;
+                    userFilter.appendChild(filterOption);
+                    
+                    const selectOption = document.createElement('option');
+                    selectOption.value = user.id;
+                    selectOption.textContent = user.username;
+                    scheduleUserSelect.appendChild(selectOption);
+                });
+            });
+        
+        // Загружаем задачи для фильтра
+        axios.get('/api/admin/tasks')
+            .then(response => {
+                const tasks = response.data;
+                const taskFilter = document.getElementById('schedule-task-filter');
+                const scheduleTaskSelect = document.getElementById('schedule-task');
+                
+                // Очищаем текущие опции
+                while (taskFilter.options.length > 1) {
+                    taskFilter.remove(1);
+                }
+                
+                while (scheduleTaskSelect.options.length > 1) {
+                    scheduleTaskSelect.remove(1);
+                }
+                
+                // Добавляем задачи
+                tasks.forEach(task => {
+                    const filterOption = document.createElement('option');
+                    filterOption.value = task.id;
+                    filterOption.textContent = task.title;
+                    taskFilter.appendChild(filterOption);
+                    
+                    const selectOption = document.createElement('option');
+                    selectOption.value = task.id;
+                    selectOption.textContent = task.title;
+                    scheduleTaskSelect.appendChild(selectOption);
+                });
+            });
+        
+        // Загружаем график
+        axios.get('/api/admin/schedule')
+            .then(response => {
+                const schedules = response.data;
+                
+                if (schedules.length > 0) {
+                    let html = '<div class="admin-table">';
+                    html += `<div class="table-header">
+                        <div class="table-cell">ID</div>
+                        <div class="table-cell">Пользователь</div>
+                        <div class="table-cell">Задача</div>
+                        <div class="table-cell">Место</div>
+                        <div class="table-cell">Дата</div>
+                        <div class="table-cell">Статус</div>
+                        <div class="table-cell">Действия</div>
+                    </div>`;
+                    
+                    schedules.forEach(schedule => {
+                        const scheduleDate = new Date(schedule.date);
+                        const formattedDate = scheduleDate.toLocaleDateString('ru-RU');
+                        
+                        html += `<div class="table-row">
+                            <div class="table-cell">${schedule.id}</div>
+                            <div class="table-cell">${schedule.user}</div>
+                            <div class="table-cell">${schedule.task}</div>
+                            <div class="table-cell">${schedule.location}</div>
+                            <div class="table-cell">${formattedDate}</div>
+                            <div class="table-cell">
+                                <span class="status-badge ${schedule.completed ? 'completed' : 'pending'}">
+                                    ${schedule.completed ? 'Выполнено' : 'Ожидает выполнения'}
+                                </span>
+                            </div>
+                            <div class="table-cell">
+                                <button class="btn btn-small btn-edit edit-schedule-btn" data-id="${schedule.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-small btn-delete delete-schedule-btn" data-id="${schedule.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    html += '</div>';
+                    scheduleList.innerHTML = html;
+                    
+                    // Добавляем обработчики для кнопок редактирования и удаления
+                    document.querySelectorAll('.edit-schedule-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const scheduleId = this.dataset.id;
+                            editSchedule(scheduleId);
+                        });
+                    });
+                    
+                    document.querySelectorAll('.delete-schedule-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const scheduleId = this.dataset.id;
+                            deleteSchedule(scheduleId);
+                        });
+                    });
+                } else {
+                    scheduleList.innerHTML = '<p class="no-data">Нет доступных записей в графике</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки графика:', error);
+                scheduleList.innerHTML = '<p class="error">Ошибка загрузки графика</p>';
+            });
+    }
+    
+    // Модальные окна и формы
+    const userModal = document.getElementById('add-user-modal');
+    const taskModal = document.getElementById('add-task-modal');
+    const scheduleModal = document.getElementById('add-schedule-modal');
+    const closeBtns = document.querySelectorAll('.close');
+    
+    // Открытие модальных окон
+    document.getElementById('add-user-btn').addEventListener('click', function() {
+        document.getElementById('add-user-form').reset();
+        userModal.style.display = 'block';
+    });
+    
+    document.getElementById('add-task-btn').addEventListener('click', function() {
+        document.getElementById('add-task-form').reset();
+        document.getElementById('task-id').value = '';
+        taskModal.style.display = 'block';
+    });
+    
+    document.getElementById('add-schedule-btn').addEventListener('click', function() {
+        document.getElementById('add-schedule-form').reset();
+        document.getElementById('schedule-id').value = '';
+        scheduleModal.style.display = 'block';
+    });
+    
+    // Закрытие модальных окон
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            userModal.style.display = 'none';
+            taskModal.style.display = 'none';
+            scheduleModal.style.display = 'none';
+        });
+    });
+    
+    window.addEventListener('click', function(event) {
+        if (event.target == userModal) {
+            userModal.style.display = 'none';
+        } else if (event.target == taskModal) {
+            taskModal.style.display = 'none';
+        } else if (event.target == scheduleModal) {
+            scheduleModal.style.display = 'none';
+        }
+    });
+    
+    // Обработка форм
+    document.getElementById('add-user-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const userData = {
+            username: document.getElementById('user-name').value,
+            telegram_id: document.getElementById('telegram-id').value,
+            is_admin: document.getElementById('is-admin').checked
+        };
+        
+        axios.post('/api/admin/users', userData)
+            .then(response => {
+                if (response.data.success) {
+                    tg.showPopup({
+                        title: 'Успех',
+                        message: 'Пользователь успешно добавлен!',
+                        buttons: [{type: 'ok'}]
+                    }, function() {
+                        userModal.style.display = 'none';
+                        loadUsers();
+                    });
+                }
+            })
+            .catch(error => {
+                tg.showPopup({
+                    title: 'Ошибка',
+                    message: 'Не удалось добавить пользователя',
+                    buttons: [{type: 'ok'}]
+                });
+            });
+    });
+    
+    document.getElementById('add-task-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const taskId = document.getElementById('task-id').value;
+        const taskData = {
+            title: document.getElementById('task-title').value,
+            location: document.getElementById('task-location').value,
+            description: document.getElementById('task-description').value
+        };
+        
+        let request;
+        if (taskId) {
+            // Обновление существующей задачи
+            taskData.id = taskId;
+            request = axios.put('/api/admin/tasks', taskData);
+        } else {
+            // Создание новой задачи
+            request = axios.post('/api/admin/tasks', taskData);
+        }
+        
+        request.then(response => {
+            if (response.data.success) {
+                tg.showPopup({
+                    title: 'Успех',
+                    message: taskId ? 'Задача успешно обновлена!' : 'Задача успешно добавлена!',
+                    buttons: [{type: 'ok'}]
+                }, function() {
+                    taskModal.style.display = 'none';
+                    loadTasks();
+                });
+            }
+        })
+        .catch(error => {
+            tg.showPopup({
+                title: 'Ошибка',
+                message: taskId ? 'Не удалось обновить задачу' : 'Не удалось добавить задачу',
+                buttons: [{type: 'ok'}]
+            });
+        });
+    });
+    
+    document.getElementById('add-schedule-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const scheduleId = document.getElementById('schedule-id').value;
+        const scheduleData = {
+            user_id: document.getElementById('schedule-user').value,
+            task_id: document.getElementById('schedule-task').value,
+            date: document.getElementById('schedule-date').value
+        };
+        
+        let request;
+        if (scheduleId) {
+            // Обновление существующей записи
+            scheduleData.id = scheduleId;
+            request = axios.put('/api/admin/schedule', scheduleData);
+        } else {
+            // Создание новой записи
+            request = axios.post('/api/admin/schedule', scheduleData);
+        }
+        
+        request.then(response => {
+            if (response.data.success) {
+                tg.showPopup({
+                    title: 'Успех',
+                    message: scheduleId ? 'Запись графика успешно обновлена!' : 'Запись графика успешно добавлена!',
+                    buttons: [{type: 'ok'}]
+                }, function() {
+                    scheduleModal.style.display = 'none';
+                    loadSchedule();
+                });
+            }
+        })
+        .catch(error => {
+            tg.showPopup({
+                title: 'Ошибка',
+                message: scheduleId ? 'Не удалось обновить запись графика' : 'Не удалось добавить запись в график',
+                buttons: [{type: 'ok'}]
+            });
+        });
+    });
+    
+    // Функции редактирования
+    function editUser(userId) {
+        // Получение данных пользователя по ID и заполнение формы
+        axios.get(`/api/admin/users/${userId}`)
+            .then(response => {
+                const user = response.data;
+                document.getElementById('user-name').value = user.username;
+                document.getElementById('telegram-id').value = user.telegram_id;
+                document.getElementById('is-admin').checked = user.is_admin;
+                
+                userModal.style.display = 'block';
+            })
+            .catch(error => {
+                tg.showPopup({
+                    title: 'Ошибка',
+                    message: 'Не удалось загрузить данные пользователя',
+                    buttons: [{type: 'ok'}]
+                });
+            });
+    }
+    
+    function editTask(taskId) {
+        // Получение данных задачи по ID и заполнение формы
+        axios.get(`/api/admin/tasks/${taskId}`)
+            .then(response => {
+                const task = response.data;
+                document.getElementById('task-id').value = task.id;
+                document.getElementById('task-title').value = task.title;
+                document.getElementById('task-location').value = task.location;
+                document.getElementById('task-description').value = task.description || '';
+                
+                taskModal.style.display = 'block';
+            })
+            .catch(error => {
+                tg.showPopup({
+                    title: 'Ошибка',
+                    message: 'Не удалось загрузить данные задачи',
+                    buttons: [{type: 'ok'}]
+                });
+            });
+    }
+    
+    function editSchedule(scheduleId) {
+        // Получение данных записи по ID и заполнение формы
+        axios.get(`/api/admin/schedule/${scheduleId}`)
+            .then(response => {
+                const schedule = response.data;
+                document.getElementById('schedule-id').value = schedule.id;
+                document.getElementById('schedule-user').value = schedule.user_id;
+                document.getElementById('schedule-task').value = schedule.task_id;
+                document.getElementById('schedule-date').value = schedule.date;
+                
+                scheduleModal.style.display = 'block';
+            })
+            .catch(error => {
+                tg.showPopup({
+                    title: 'Ошибка',
+                    message: 'Не удалось загрузить данные записи',
+                    buttons: [{type: 'ok'}]
+                });
+            });
+    }
+    
+    // Функции удаления
+    function deleteUser(userId) {
+        tg.showPopup({
+            title: 'Подтверждение',
+            message: 'Вы уверены, что хотите удалить этого пользователя?',
+            buttons: [
+                {type: 'cancel', text: 'Отмена'},
+                {type: 'destructive', text: 'Удалить'}
+            ]
+        }, function(buttonId) {
+            if (buttonId === 'destructive') {
+                axios.delete('/api/admin/users', { data: { id: userId } })
+                    .then(response => {
+                        if (response.data.success) {
+                            tg.showPopup({
+                                title: 'Успех',
+                                message: 'Пользователь успешно удален!',
+                                buttons: [{type: 'ok'}]
+                            }, function() {
+                                loadUsers();
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        tg.showPopup({
+                            title: 'Ошибка',
+                            message: 'Не удалось удалить пользователя',
+                            buttons: [{type: 'ok'}]
+                        });
+                    });
+            }
+        });
+    }
+    
+    function deleteTask(taskId) {
+        tg.showPopup({
+            title: 'Подтверждение',
+            message: 'Вы уверены, что хотите удалить эту задачу?',
+            buttons: [
+                {type: 'cancel', text: 'Отмена'},
+                {type: 'destructive', text: 'Удалить'}
+            ]
+        }, function(buttonId) {
+            if (buttonId === 'destructive') {
+                axios.delete('/api/admin/tasks', { data: { id: taskId } })
+                    .then(response => {
+                        if (response.data.success) {
+                            tg.showPopup({
+                                title: 'Успех',
+                                message: 'Задача успешно удалена!',
+                                buttons: [{type: 'ok'}]
+                            }, function() {
+                                loadTasks();
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        tg.showPopup({
+                            title: 'Ошибка',
+                            message: 'Не удалось удалить задачу',
+                            buttons: [{type: 'ok'}]
+                        });
+                    });
+            }
+        });
+    }
+    
+    function deleteSchedule(scheduleId) {
+        tg.showPopup({
+            title: 'Подтверждение',
+            message: 'Вы уверены, что хотите удалить эту запись из графика?',
+            buttons: [
+                {type: 'cancel', text: 'Отмена'},
+                {type: 'destructive', text: 'Удалить'}
+            ]
+        }, function(buttonId) {
+            if (buttonId === 'destructive') {
+                axios.delete('/api/admin/schedule', { data: { id: scheduleId } })
+                    .then(response => {
+                        if (response.data.success) {
+                            tg.showPopup({
+                                title: 'Успех',
+                                message: 'Запись графика успешно удалена!',
+                                buttons: [{type: 'ok'}]
+                            }, function() {
+                                loadSchedule();
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        tg.showPopup({
+                            title: 'Ошибка',
+                            message: 'Не удалось удалить запись графика',
+                            buttons: [{type: 'ok'}]
+                        });
+                    });
+            }
+        });
+    }
+    
+    // Инициализация первой вкладки
+    loadUsers();
+});
+</script>
+{% endblock %}<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>График уборки</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/0.0.1/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="telegram-app">
+        <header>
+            <h1>{% block title %}График уборки{% endblock %}</h1>
+            <div class="user-info">
+                <span id="username"></span>
+            </div>
+        </header>
+        
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        
+        <nav class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Главная</span>
+            </a>
+            <a href="{{ url_for('schedule') }}" class="nav-item">
+                <i class="fas fa-calendar"></i>
+                <span>График</span>
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_panel') }}" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Админ</span>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+
+<!-- templates/index.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="home-container">
+    <div class="greeting">
+        <h2>Здравствуйте, <span id="user-greeting"></span>!</h2>
+    </div>
+    
+    <div class="next-cleaning">
+        <h3>Ваша ближайшая уборка:</h3>
+        <div id="next-task">
+            <div class="loader"></div>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <button id="view-schedule" class="btn btn-primary">
+            <i class="fas fa-calendar"></i> Посмотреть полный график
+        </button>
+        <button id="mark-completed" class="btn btn-success">
+            <i class="fas fa-check"></i> Отметить выполненным
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Получение данных текущего пользователя
+    const telegramId = tg.initDataUnsafe?.user?.id;
+    if (telegramId) {
+        axios.get(`/api/user/${telegramId}`)
+            .then(response => {
+                const user = response.data;
+                document.getElementById('username').textContent = user.username;
+                document.getElementById('user-greeting').textContent = user.username;
+                
+                // Получение графика пользователя
+                return axios.get(`/api/schedule/user/${user.id}`);
+            })
+            .then(response => {
+                const schedules = response.data;
+                const nextTaskContainer = document.getElementById('next-task');
+                
+                if (schedules.length > 0) {
+                    // Сортируем по дате и берем ближайшую задачу
+                    schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const nextTask = schedules[0];
+                    
+                    // Форматируем дату в удобный вид
+                    const taskDate = new Date(nextTask.date);
+                    const formattedDate = taskDate.toLocaleDateString('ru-RU', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    
+                    nextTaskContainer.innerHTML = `
+                        <div class="task-card">
+                            <h4>${nextTask.task}</h4>
+                            <p><i class="fas fa-map-marker-alt"></i> ${nextTask.location}</p>
+                            <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
+                            <div class="task-status ${nextTask.completed ? 'completed' : 'pending'}">
+                                ${nextTask.completed ? 'Выполнено' : 'Ожидает выполнения'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Настраиваем кнопку отметки выполнения
+                    const markCompletedBtn = document.getElementById('mark-completed');
+                    if (nextTask.completed) {
+                        markCompletedBtn.disabled = true;
+                        markCompletedBtn.classList.add('disabled');
+                        markCompletedBtn.innerHTML = '<i class="fas fa-check"></i> Уже выполнено';
+                    } else {
+                        markCompletedBtn.addEventListener('click', function() {
+                            axios.put('/api/admin/schedule', {
+                                id: nextTask.id,
+                                completed: true
+                            })
+                            .then(response => {
+                                if (response.data.success) {
+                                    tg.showPopup({
+                                        title: 'Успех',
+                                        message: 'Задача помечена как выполненная!',
+                                        buttons: [{type: 'ok'}]
+                                    }, function() {
+                                        location.reload();
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                tg.showPopup({
+                                    title: 'Ошибка',
+                                    message: 'Не удалось обновить статус задачи',
+                                    buttons: [{type: 'ok'}]
+                                });
+                            });
+                        });
+                    }
+                } else {
+                    nextTaskContainer.innerHTML = '<p class="no-tasks">У вас нет запланированных задач</p>';
+                    document.getElementById('mark-completed').style.display = 'none';
+                }
+                
+                // Настраиваем кнопку просмотра полного графика
+                document.getElementById('view-schedule').addEventListener('click', function() {
+                    window.location.href = '/schedule';
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка получения данных:', error);
+                document.getElementById('next-task').innerHTML = 
+                    '<p class="error">Произошла ошибка при загрузке данных</p>';
+            });
+    } else {
+        document.getElementById('next-task').innerHTML = 
+            '<p class="error">Не удалось получить данные пользователя Telegram</p>';
+    }
+});
+</script>
+{% endblock %}
+
+<!-- templates/schedule.html -->
+{% extends 'base.html' %}
+
+{% block title %}Мой график уборки{% endblock %}
+
+{% block content %}
+<div class="schedule-container">
+    <div class="filters">
+        <div class="date-filter">
+            <button id="prev-week" class="btn btn-small">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <span id="date-range">Текущая неделя</span>
+            <button id="next-week" class="btn btn-small">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div id="schedule-list" class="schedule-list">
+        <div class="loader"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Настройка состояния фильтров по умолчанию
+    let currentWeekOffset = 0;
+    
+    // Функция загрузки графика
+    function loadSchedule() {
+        const scheduleList = document.getElementById('schedule-list');
+        scheduleList.innerHTML = '<div class="loader"></div>';
+        
+        const telegramId = tg.initDataUnsafe?.user?.id;
+        if (!telegramId) {
+            scheduleList.innerHTML = '<p class="error">Не удалось получить данные пользователя Telegram</p>';
+            return;
+        }
+        
+        // Получение данных пользователя
+        axios.get(`/api/user/${telegramId}`)
+            .then(response => {
+                const user = response.data;
+                document.getElementById('username').textContent = user.username;
+                
+                // Расчет дат для текущей недели с учетом смещения
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                
+                // Обновление отображения диапазона дат
+                const startFormatted = startOfWeek.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+                const endFormatted = endOfWeek.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+                document.getElementById('date-range').textContent = `${startFormatted} - ${endFormatted}`;
+                
+                // Получение графика пользователя
+                return axios.get(`/api/schedule/user/${user.id}`);
+            })
+            .then(response => {
+                const allSchedules = response.data;
+                const scheduleList = document.getElementById('schedule-list');
+                
+                // Фильтрация задач для текущей недели
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+                startOfWeek.setHours(0, 0, 0, 0);
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setHours(23, 59, 59, 999);
+                
+                const weekSchedules = allSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.date);
+                    return scheduleDate >= startOfWeek && scheduleDate <= endOfWeek;
+                });
+                
+                if (weekSchedules.length > 0) {
+                    // Сортировка по дате
+                    weekSchedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    // Группировка по дням недели
+                    const dayGroups = {};
+                    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+                    
+                    weekSchedules.forEach(schedule => {
+                        const scheduleDate = new Date(schedule.date);
+                        const dayName = days[scheduleDate.getDay()];
+                        const dayFormatted = scheduleDate.toLocaleDateString('ru-RU', { 
+                            day: 'numeric', 
+                            month: 'long'
+                        });
+                        
+                        const dayKey = `${dayName}, ${dayFormatted}`;
+                        
+                        if (!dayGroups[dayKey]) {
+                            dayGroups[dayKey] = [];
+                        }
+                        
+                        dayGroups[dayKey].push(schedule);
+                    });
+                    
+                    // Формирование HTML для каждого дня
+                    let html = '';
+                    for (const dayKey in dayGroups) {
+                        html += `<div class="day-group">
+                            <h3 class="day-header">${dayKey}</h3>
+                            <div class="day-tasks">`;
+                        
+                        dayGroups[dayKey].forEach(schedule => {
+                            html += `
+                                <div class="task-card ${schedule.completed ? 'completed' : ''}">
+                                    <h4>${schedule.task}</h4>
+                                    <p><i class="fas fa-map-marker-alt"></i> ${schedule.location}</p>
+                                    <div class="task-status ${schedule.completed ? 'completed' : 'pending'}">
+                                        ${schedule.completed ? 'Выполнено' : 'Ожидает выполнения'}
+                                    </div>
+                                    <button class="toggle-status-btn" data-id="${schedule.id}" data-completed="${schedule.completed}">
+                                        ${schedule.completed ? '<i class="fas fa-times"></i> Отменить' : '<i class="fas fa-check"></i> Отметить выполненным'}
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div></div>`;
+                    }
+                    
+                    scheduleList.innerHTML = html;
+                    
+                    // Добавление обработчиков для кнопок изменения статуса
+                    document.querySelectorAll('.toggle-status-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const completed = this.dataset.completed !== 'true';
+                            
+                            axios.put('/api/admin/schedule', {
+                                id: id,
+                                completed: completed
+                            })
+                            .then(response => {
+                                if (response.data.success) {
+                                    tg.showPopup({
+                                        title: 'Успех',
+                                        message: `Задача ${completed ? 'отмечена как выполненная' : 'помечена как невыполненная'}!`,
+                                        buttons: [{type: 'ok'}]
+                                    }, function() {
+                                        loadSchedule();
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                tg.showPopup({
+                                    title: 'Ошибка',
+                                    message: 'Не удалось обновить статус задачи',
+                                    buttons: [{type: 'ok'}]
+                                });
+                            });
+                        });
+                    });
+                } else {
+                    scheduleList.innerHTML = '<p class="no-tasks">Нет задач на этой неделе</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка получения данных:', error);
+                document.getElementById('schedule-list').innerHTML = 
+                    '<p class="error">Произошла ошибка при загрузке данных</p>';
+            });
+    }
+    
+    // Инициализация загрузки графика
+    loadSchedule();
+    
+    // Обработчики для кнопок навигации по неделям
+    document.getElementById('prev-week').addEventListener('click', function() {
+        currentWeekOffset--;
+        loadSchedule();
+    });
+    
+    document.getElementById('next-week').addEventListener('click', function() {
+        currentWeekOffset++;
+        loadSchedule();
+    });
+});
+</script>
+{% endblock %}
+
+<!-- templates/admin.html -->
+{% extends 'base.html' %}
+
+{% block title %}Администрирование{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="tabs">
+        <button id="tab-users" class="tab-btn active">Пользователи</button>
+        <button id="tab-tasks" class="tab-btn">Задачи

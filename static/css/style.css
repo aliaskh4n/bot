@@ -1,0 +1,635 @@
+/* static/css/style.css */
+:root {
+    --primary-color: #5288c1;
+    --primary-dark: #3a6999;
+    --secondary-color: #f0f2f5;
+    --text-color: #2c3e50;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --border-color: #dfe4ea;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --main-font: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--main-font);
+    color: var(--text-color);
+    background-color: var(--secondary-color);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+/* Telegram web app specific styles */
+.telegram-app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.user-info {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+main {
+    flex: 1;
+    padding: 1rem;
+    padding-bottom: 4rem; /* Для нижней навигации */
+}
+
+/* Нижняя навигация */
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background-color: white;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3.5rem;
+    box-shadow: 0 -2px 5px var(--shadow-color);
+    z-index: 90;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    color: var(--text-color);
+    width: 33.333%;
+}
+
+.nav-item i {
+    font-size: 1.2rem;
+    margin-bottom: 0.2rem;
+}
+
+.nav-item.active {
+    color: var(--primary-color);
+}
+
+/* Кнопки */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn i {
+    margin-right: 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #27ae60;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+.btn-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.btn-edit {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-delete {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Домашняя страница */
+.home-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.greeting {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.next-cleaning {
+    background-color: white;
+    border-radius: 0.8rem;
+    padding: 1rem;
+    box-shadow: 0 2px 6px var(--shadow-color);
+}
+
+.next-cleaning h3 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.task-card {
+    background-color: white;
+    border-radius: 0.8rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 6px var(--shadow-color);
+    border-left: 4px solid var(--primary-color);
+}
+
+.task-card.completed {
+    border-left-color: var(--success-color);
+}
+
+.task-card h4 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.task-card p {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.task-card p i {
+    margin-right: 0.4rem;
+}
+
+.task-status {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+}
+
+.task-status.pending {
+    background-color: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.task-status.completed {
+    background-color: #e8f5e9;
+    color: var(--success-color);
+}
+
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+/* График уборки */
+.schedule-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.filters {
+    margin-bottom: 1rem;
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: white;
+    border-radius: 0.8rem;
+    padding: 0.8rem;
+    box-shadow: 0 2px 6px var(--shadow-color);
+}
+
+.date-filter span {
+    font-weight: 500;
+}
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.day-group {
+    margin-bottom: 1.5rem;
+}
+
+.day-header {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+    color: #7f8c8d;
+}
+
+.day-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.toggle-status-btn {
+    margin-top: 0.8rem;
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 0.4rem;
+    background-color: var(--secondary-color);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-status-btn i {
+    margin-right: 0.4rem;
+}
+
+.toggle-status-btn:hover {
+    background-color: #dfe4ea;
+}
+
+/* Административная панель */
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tabs {
+    display: flex;
+    background-color: white;
+    border-radius: 0.8rem;
+    overflow: hidden;
+    box-shadow: 0 2px 6px var(--shadow-color);
+    margin-bottom: 1rem;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.8rem;
+    background-color: transparent;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+    border-bottom-color: var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.admin-header h2 {
+    font-size: 1.2rem;
+}
+
+.admin-table {
+    background-color: white;
+    border-radius: 0.8rem;
+    overflow: hidden;
+    box-shadow: 0 2px 6px var(--shadow-color);
+}
+
+.table-header {
+    display: flex;
+    background-color: #f8f9fa;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-row {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-cell {
+    padding: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.table-cell:last-child {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.schedule-filter {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 30%;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+    color: #7f8c8d;
+}
+
+.filter-group select {
+    padding: 0.6rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border-color);
+    background-color: white;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.3rem;
+    font-size: 0.75rem;
+}
+
+.status-badge.pending {
+    background-color: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.status-badge.completed {
+    background-color: #e8f5e9;
+    color: var(--success-color);
+}
+
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 1.5rem auto;
+    padding: 1.5rem;
+    border-radius: 0.8rem;
+    max-width: 90%;
+    width: 500px;
+    box-shadow: 0 3px 15px var(--shadow-color);
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-family: var(--main-font);
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-group input {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-weight: normal;
+}
+
+/* Вспомогательные классы */
+.loader {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 3px solid var(--secondary-color);
+    border-radius: 50%;
+    border-top: 3px solid var(--primary-color);
+    animation: spin 1s linear infinite;
+    margin: 1.5rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error {
+    color: var(--danger-color);
+    text-align: center;
+    padding: 1rem;
+}
+
+.no-tasks, .no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+}
+
+/* Адаптивность */
+@media (min-width: 768px) {
+    .quick-actions {
+        flex-direction: row;
+    }
+    
+    .quick-actions button {
+        flex: 1;
+    }
+    
+    .admin-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-cell {
+        font-size: 0.85rem;
+    }
+    
+    .admin-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .admin-header .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.8rem;
+    }
+}
+
+/* Поддержка темной темы Telegram */
+html.dark-theme {
+    --secondary-color: #1c2733;
+    --text-color: #ffffff;
+    --border-color: #2c3e50;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    background-color: #0f1724;
+}
+
+html.dark-theme body {
+    background-color: #0f1724;
+    color: white;
+}
+
+html.dark-theme .bottom-nav, 
+html.dark-theme .task-card, 
+html.dark-theme .admin-table, 
+html.dark-theme .date-filter,
+html.dark-theme .modal-content,
+html.dark-theme .tabs {
+    background-color: #1c2733;
+}
+
+html.dark-theme .table-header {
+    background-color: #2c3e50;
+}
+
+html.dark-theme .task-card p {
+    color: #a0b0c0;
+}
+
+html.dark-theme .task-status.pending {
+    background-color: #2c3e50;
+    color: #a0b0c0;
+}
+
+html.dark-theme .day-header {
+    color: #a0b0c0;
+}
+
+html.dark-theme .form-group input, 
+html.dark-theme .form-group textarea, 
+html.dark-theme .form-group select {
+    background-color: #2c3e50;
+    border-color: #3a526b;
+    color: white;
+}
+
+html.dark-theme .toggle-status-btn {
+    background-color: #2c3e50;
+    color: white;
+}
+
+html.dark-theme .toggle-status-btn:hover {
+    background-color: #3a526b;
+}
+
+html.dark-theme .no-tasks, 
+html.dark-theme .no-data {
+    color: #a0b0c0;
+}
